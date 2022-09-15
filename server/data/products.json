@@ -1,0 +1,16 @@
+[
+  {
+    "title": "This is my test 1111",
+    "imageUrl": "",
+    "description": "My fancy product",
+    "price": 50,
+    "id": "0.3096308607116831"
+  },
+  {
+    "id": "0.03923605519724882",
+    "title": "My new product",
+    "imageUrl": "New imageUrl",
+    "description": "New product description",
+    "price": 200
+  }
+]
