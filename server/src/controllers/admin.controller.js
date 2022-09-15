@@ -32,7 +32,6 @@ exports.editProduct = (req, res, next) => {
         description,
         price
     );
-    console.log('here is your updated product', updatedProduct);
 
     updatedProduct.save();
 
