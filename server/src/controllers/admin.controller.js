@@ -1,51 +1,72 @@
 const Product = require('../models/product.model');
 
-exports.addProduct = (req, res, next) => {
+exports.addProduct = async (req, res, next) => {
     const {title, imageUrl, description, price} = req.body;
 
-    const product = new Product(null, title, imageUrl, description, price);
-    product.save(product);
+    try {
+        const newProduct = await Product.create({
+            title,
+            price,
+            imageUrl,
+            description,
+            userId: req.user.id,
+        });
 
-    return res.status(201).json({
-        message: 'Product succesfully added',
-        data: product,
-    });
+        return res.status(201).json({
+            message: 'Product succesfully added',
+            data: newProduct,
+        });
+    } catch (err) {
+        // throw error
+    }
 };
 
-exports.getProducts = (req, res, next) => {
-    Product.fetchAll((products) => {
+exports.getProducts = async (req, res, next) => {
+    try {
+        const products = await Product.findAll();
+
         return res.status(200).json({
             data: products,
         });
-    });
+    } catch (err) {
+        // throw error
+    }
 };
 
-exports.editProduct = (req, res, next) => {
+exports.editProduct = async (req, res, next) => {
     const prodId = req.params.id;
 
     const {title, price, imageUrl, description} = req.body;
 
-    const updatedProduct = new Product(
-        prodId, //
-        title,
-        imageUrl,
-        description,
-        price
-    );
+    try {
+        product = await Product.findByPk(prodId);
 
-    updatedProduct.save();
+        product.title = title;
+        product.price = price;
+        product.imageUrl = imageUrl;
+        product.description = description;
 
-    return res.status(201).json({
-        message: 'Product updated successfully',
-        data: updatedProduct,
-    });
+        await product.save();
+
+        return res.status(201).json({
+            message: 'Product updated successfully',
+            data: product,
+        });
+    } catch (err) {
+        // throw error
+    }
 };
 
-exports.deleteProduct = (req, res, next) => {
+exports.deleteProduct = async (req, res, next) => {
     const prodId = req.params.id;
-    Product.deleteById(prodId);
 
-    return res.status(200).json({
-        message: 'Product deleted successfully',
-    });
+    try {
+        await Product.destroy({where: {id: prodId}});
+
+        return res.status(200).json({
+            message: 'Product deleted successfully',
+        });
+    } catch (err) {
+        // throw error
+    }
 };
