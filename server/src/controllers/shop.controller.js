@@ -1,5 +1,4 @@
 const Product = require('../models/product.model');
-const Cart = require('../models/cart.model');
 
 exports.getProducts = async (req, res, next) => {
     try {
@@ -101,5 +100,48 @@ exports.deleteCart = async (req, res, next) => {
     } catch (err) {}
 };
 
-exports.getOrders = (req, res, next) => {};
+exports.createOrder = (req, res, next) => {
+    let fetchedCart;
+    req.user
+        .getCart()
+        .then((cart) => {
+            fetchedCart = cart;
+            return cart.getProducts();
+        })
+        .then((products) => {
+            return req.user
+                .createOrder()
+                .then((order) => {
+                    return order.addProducts(
+                        products.map((product) => {
+                            product.orderItem = {quantity: product.cartItem.quantity};
+                            return product;
+                        })
+                    );
+                })
+                .catch((err) => console.log(err));
+        })
+        .then((result) => {
+            if (result) {
+                // Cleaning out the cart
+                fetchedCart.setProducts(null);
+                // Return result
+                return res.status(200).json({
+                    message: 'Cart successfully added to orders',
+                });
+            }
+        })
+        .catch((err) => console.log(err));
+};
+exports.getOrders = async (req, res, next) => {
+    try {
+        let orders = await req.user.getOrders({include: ['products']});
+        if (orders) {
+            // Return result
+            return res.status(200).json({
+                data: orders,
+            });
+        }
+    } catch (err) {}
+};
 exports.getCheckout = (req, res, next) => {};
