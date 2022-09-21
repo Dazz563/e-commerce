@@ -1,8 +1,10 @@
 const Sequelize = require('sequelize');
 
-const sequelize = new Sequelize('node_shopping_cart_db', 'root', 'root', {
-    dialect: 'mysql',
-    host: 'localhost',
+require('dotenv').config();
+
+const sequelize = new Sequelize(process.env.DATABASE, 'root', 'root', {
+    dialect: process.env.DIALECT,
+    host: process.env.HOST,
 });
 
 module.exports = sequelize;

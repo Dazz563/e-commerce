@@ -16,9 +16,22 @@ const User = sequelize.define('user', {
     },
     email: {
         type: Sequelize.DataTypes.STRING,
+        unique: true,
     },
     imageUrl: {
         type: Sequelize.DataTypes.STRING,
+    },
+    password: {
+        type: Sequelize.DataTypes.STRING,
+        validate: {
+            notEmpty: true,
+        },
+    },
+    resetToken: {
+        type: Sequelize.DataTypes.STRING,
+    },
+    resetTokenExpiration: {
+        type: Sequelize.DataTypes.DATE,
     },
 });
 

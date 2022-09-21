@@ -1,14 +1,16 @@
 const Product = require('../models/product.model');
+const User = require('../models/user.model');
 
 exports.getProducts = async (req, res, next) => {
     try {
+        // const products = await Product.findAll({include: User});
         const products = await Product.findAll();
 
         return res.status(200).json({
             data: products,
         });
     } catch (err) {
-        // throw error
+        console.log(err);
     }
 };
 

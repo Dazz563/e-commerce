@@ -2,6 +2,7 @@ const Product = require('../models/product.model');
 
 exports.addProduct = async (req, res, next) => {
     const {title, imageUrl, description, price} = req.body;
+    console.log(req.user);
 
     try {
         const newProduct = await Product.create({
@@ -9,15 +10,22 @@ exports.addProduct = async (req, res, next) => {
             price,
             imageUrl,
             description,
-            userId: req.user.id,
+            userId: req.session.user.id,
         });
+
+        if (!newProduct) {
+            return res.status(500).json({
+                message: 'Internal server error',
+            });
+        }
 
         return res.status(201).json({
             message: 'Product succesfully added',
             data: newProduct,
         });
     } catch (err) {
-        // throw error
+        console.log(err);
+        next();
     }
 };
 
