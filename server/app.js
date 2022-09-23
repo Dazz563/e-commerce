@@ -1,5 +1,7 @@
 const express = require('express');
 const app = express();
+const multer = require('multer');
+const path = require('path');
 
 const sequelize = require('./src/util/database');
 const User = require('././src/models/user.model');
@@ -31,7 +33,30 @@ const authRoutes = require('./src/routes/auth.routes');
 
 // This will parse incoming JSON
 app.use(express.json());
-// Session
+// This will parse incoming file binary for images using MULTER
+const fileStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'images');
+    },
+    filename: (req, file, cb) => {
+        cb(null, `${Date.now()}-${file.originalname}`);
+    },
+});
+// File Filter
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype === 'image/png' || file.mimetype === 'image/jpg' || file.mimetype === 'image/jpeg') {
+        cb(null, true);
+    } else {
+        cb(null, false);
+    }
+};
+app.use(
+    multer({
+        storage: fileStorage,
+        fileFilter: fileFilter,
+    }).single('image')
+);
+// Session config
 app.use(
     session({
         secret: 'superSecret123$#@',
@@ -44,17 +69,21 @@ app.use(
     })
 );
 
-// temporarily adds the user to the req
+// adds the user to the req
 app.use((req, res, next) => {
-    User.findByPk(1)
+    if (!req.session.user) {
+        return next();
+    }
+    User.findByPk(req.session.user.id)
         .then((user) => {
             req.user = user;
             next();
         })
-        .catch((err) => {
-            console.log(err);
-        });
+        .catch((err) => console.log(err));
 });
+
+// Public file
+app.use('/images', express.static(path.join(__dirname, 'images')));
 // Routers
 app.use('/api/admin', adminRoutes);
 app.use('/api/shop', shopRoutes);
@@ -79,7 +108,7 @@ Order.belongsToMany(Product, {through: OrderItem});
 // syncing mySQL
 (async () => {
     await sequelize.sync();
-    // await sequelize.sync({alter: true});
+    // await sequelize.sync({force: true});
 })();
 
 module.exports = app;

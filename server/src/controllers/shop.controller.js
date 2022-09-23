@@ -31,14 +31,22 @@ exports.getProductById = async (req, res, next) => {
 exports.getCart = async (req, res, next) => {
     try {
         let cart = await req.user.getCart();
+        // checks for empty cart
+        if (!cart) {
+            return res.status(200).json({
+                message: 'Your cart is empty',
+                data: [],
+            });
+        }
         // sequelize uses belongsToMany to give us the getProducts as a magic method
         cartProducts = await cart.getProducts();
-        console.log(cart);
 
         return res.status(200).json({
             data: cartProducts,
         });
-    } catch (err) {}
+    } catch (err) {
+        console.log(err);
+    }
 };
 
 // Add product to cart
@@ -48,12 +56,16 @@ exports.addCart = async (req, res, next) => {
 
     try {
         let cart = await req.user.getCart();
+        console.log('Here is your cart', cart.toJSON());
 
         // check to see if the product exists in the cart
         let products = await cart.getProducts({where: {id: prodId}});
+        products.forEach((product) => {
+            console.log(product.toJSON());
+        });
         // if we do have products we will assign it (undefined if not)
         let product;
-        if (products.length > 0) {
+        if (products.length >= 0) {
             product = products[0];
         }
         // check to adjust quantity if product exists
@@ -78,7 +90,9 @@ exports.addCart = async (req, res, next) => {
             message: 'Product successfully added to your cart',
             data: product,
         });
-    } catch (err) {}
+    } catch (err) {
+        console.log(err);
+    }
 };
 
 exports.deleteCart = async (req, res, next) => {

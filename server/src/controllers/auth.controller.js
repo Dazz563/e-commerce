@@ -1,6 +1,13 @@
 const User = require('../models/user.model');
 const bcrypt = require('bcrypt');
+
+// crypto is converted into a promise
 const crypto = require('crypto');
+const util = require('util');
+const randomBytes = util.promisify(crypto.randomBytes);
+
+// Validation
+const {validationResult} = require('express-validator/check');
 
 const Sequelize = require('sequelize');
 const {Op} = Sequelize;
@@ -27,7 +34,7 @@ exports.login = async (req, res, next) => {
         let loggedUser = user.toJSON();
         delete loggedUser.password;
 
-        req.session.user = user;
+        req.session.user = loggedUser;
         req.session.isLoggedIn = true;
         res.status(200).json({
             message: 'Successful login',
@@ -35,11 +42,20 @@ exports.login = async (req, res, next) => {
         });
     } catch (err) {
         console.log(err);
+        next();
     }
 };
 
 exports.signup = async (req, res, next) => {
-    const {firstName, lastName, email, imageUrl, password} = req.body;
+    const {firstName, lastName, email, password} = req.body;
+    const image = req.file;
+    // check to see if correct file format is used
+    if (!image) {
+        return res.status(422).json({
+            message: 'Invalid file type',
+        });
+    }
+    const imageUrl = image.path;
     try {
         let hashPassword = await bcrypt.hash(password, 12);
         let user = await User.create({
@@ -49,6 +65,9 @@ exports.signup = async (req, res, next) => {
             imageUrl,
             password: hashPassword,
         });
+
+        // create cart for user
+        await user.createCart();
 
         if (!user) {
             if (err) {
@@ -99,7 +118,7 @@ exports.logout = async (req, res, next) => {
 exports.resetPassword = async (req, res, next) => {
     const email = req.body.email;
     try {
-        let token = await bcrypt.hash(email, 12);
+        const token = (await randomBytes(32)).toString('hex');
 
         const user = await User.findOne({
             where: {
@@ -107,7 +126,7 @@ exports.resetPassword = async (req, res, next) => {
             },
         });
 
-        // catch no user found
+        // check for user existence
         if (!user) {
             res.status(404).json({
                 message: 'No user with this email exists!',
@@ -119,6 +138,7 @@ exports.resetPassword = async (req, res, next) => {
             resetTokenExpiration: Date.now() + 3600000,
         });
 
+        // check update has been successful
         if (updateToken) {
             let emailRes = await sendEmail(email, `Here is your reset token`, token);
 
@@ -140,7 +160,9 @@ exports.resetPassword = async (req, res, next) => {
 };
 
 exports.newPassword = async (req, res, next) => {
-    const {newPassword, token} = req.body;
+    const newPassword = req.body.newPassword;
+    const token = req.params.token;
+
     try {
         const user = await User.findOne({
             where: {
@@ -151,7 +173,6 @@ exports.newPassword = async (req, res, next) => {
             },
         });
 
-        console.log(user.toJSON());
         if (!user) {
             res.status(404).json({
                 message: 'Invalid token',
@@ -162,6 +183,8 @@ exports.newPassword = async (req, res, next) => {
 
         let result = await user.update({
             password: updatedPassword,
+            resetToken: null,
+            resetTokenExpiration: null,
         });
 
         if (!result) {
